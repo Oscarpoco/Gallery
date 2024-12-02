@@ -38,11 +38,11 @@ const HomeScreen = ({ navigation }) => {
       />
 
       {/* Button to toggle between grid and list view */}
-      <TouchableOpacity style={styles.toggleButton} onPress={toggleViewMode}>
+      {/* <TouchableOpacity style={styles.toggleButton} onPress={toggleViewMode}>
         <Text style={styles.buttonText}>
           Switch to {viewMode === 'grid' ? 'List' : 'Grid'} View
         </Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Floating button to open camera */}
       <TouchableOpacity
@@ -56,7 +56,8 @@ const HomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  container: 
+  {
     flex: 1,
     justifyContent: 'flex-start', 
     alignItems: 'center',
@@ -67,41 +68,47 @@ const styles = StyleSheet.create({
   },
 
 
-  imageList: {
+  imageList: 
+  {
     flex: 1,
+    marginBottom: 10, 
     width: '100%',
-    marginBottom: 70, 
   },
 
-  gridItem: {
+  gridItem: 
+  {
     flex: 1,
     margin: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-  listItem: {
+  listItem: 
+  {
     flexDirection: 'row',
     marginVertical: 10,
     justifyContent: 'center',
+    alignItems: 'center',
     width: '100%',
-    height: 350,
   },
 
-  gridImage: {
+  gridImage: 
+  {
     width: 150,
     height: 150,
-    borderRadius: 8,
+    borderRadius: 10,
   },
 
-  listImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
+  listImage: 
+  {
+    width: 300,
+    height: 250,
+    borderRadius: 10,
     marginRight: 10,
   },
 
-  toggleButton: {
+  toggleButton: 
+  {
     backgroundColor: '#6200ea',
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -109,13 +116,15 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
 
-  buttonText: {
+  buttonText: 
+  {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
 
-  floatingButton: {
+  floatingButton: 
+  {
     position: 'absolute',
     bottom: 20,
     right: 20,

@@ -12,14 +12,21 @@ import HomeScreen from './screens/HomeScreen';
 import CameraScreen from './screens/CameraScreen';
 import Settings from './screens/Settings';
 
-// Stack Navigator for Home (optional, if you plan to use deeper navigation)
+
 const HomeStack = createStackNavigator();
 
 const HomeStackNavigator = () => (
   <HomeStack.Navigator>
     <HomeStack.Screen name="HomeMain" component={HomeScreen} options={{ title: 'Gallery' }} />
-    {/* You can add additional screens in the stack if necessary */}
   </HomeStack.Navigator>
+);
+
+const SettingsStack = createStackNavigator();
+
+const SettingsStackNavigator = () => (
+  <SettingsStack.Navigator>
+    <SettingsStack.Screen name="SettingsMain" component={Settings} options={{ title: 'Settings' }} />
+  </SettingsStack.Navigator>
 );
 
 // Bottom Tab Navigator
@@ -76,7 +83,7 @@ const App = () => {
         />
         <Tab.Screen
           name="Settings"
-          component={Settings}
+          component={SettingsStackNavigator} 
           options={{
             title: 'Settings',
             tabBarIcon: ({ color, size }) => (
@@ -90,17 +97,6 @@ const App = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
-  text: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-});
 
 export default App;
