@@ -3,25 +3,27 @@ import { View, TextInput, Text, StyleSheet, TouchableOpacity, FlatList, Image, M
 
 // ICONS
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const images = [
-    { id: '1', uri: require('../assets/cod.jpg') },
-    { id: '2', uri: require('../assets/b.jpg') },
-    { id: '3', uri: require('../assets/g.jpg') },
-    { id: '4', uri: require('../assets/1.jpg') },
-    { id: '5', uri: require('../assets/Gamers.jpg') },
-    { id: '6', uri: require('../assets/Groot.jpg') },
-    { id: '7', uri: require('../assets/her.jpg') },
-    { id: '8', uri: require('../assets/me.jpg') },
-    { id: '9', uri: require('../assets/my.jpg') },
-    { id: '11', uri: require('../assets/P.jpg') },
-    { id: '12', uri: require('../assets/PIC.jpg') },
-    { id: '13', uri: require('../assets/pi.jpg') },
-    { id: '14', uri: require('../assets/sp.jpg') },
-    { id: '15', uri: require('../assets/n.jpg') },
-    { id: '16', uri: require('../assets/e.jpg') },
-    { id: '17', uri: require('../assets/col.jpg') },
-    { id: '18', uri: require('../assets/cute.jpg') },
+    { id: '1', uri: require('../assets/cod.jpg'), location: 'Location 1', name: 'picture 1' },
+    { id: '2', uri: require('../assets/b.jpg'), location: 'Location 2', name: 'picture 2' },
+    { id: '3', uri: require('../assets/g.jpg'), location: 'Location 3', name: 'picture 3' },
+    { id: '4', uri: require('../assets/1.jpg'), location: 'Location 4', name: 'picture 4' },
+    { id: '5', uri: require('../assets/Gamers.jpg'), location: 'Location 5', name: 'picture 5' },
+    { id: '6', uri: require('../assets/Groot.jpg'), location: 'Location 6', name: 'picture 6' },
+    { id: '7', uri: require('../assets/her.jpg'), location: 'Location 7', name: 'picture 7' },
+    { id: '8', uri: require('../assets/me.jpg'), location: 'Location 8', name: 'picture 8' },
+    { id: '9', uri: require('../assets/my.jpg'), location: 'Location 9', name: 'picture 9' },
+    { id: '11', uri: require('../assets/P.jpg'), location: 'Location 11', name: 'picture 11' },
+    { id: '12', uri: require('../assets/PIC.jpg'), location: 'Location 12', name: 'picture 12' },
+    { id: '13', uri: require('../assets/pi.jpg'), location: 'Location 13', name: 'picture 13' },
+    { id: '14', uri: require('../assets/sp.jpg'), location: 'Location 14', name: 'picture 14' },
+    { id: '15', uri: require('../assets/n.jpg'), location: 'Location 15', name: 'picture 15' },
+    { id: '16', uri: require('../assets/e.jpg'), location: 'Location 16', name: 'picture 16' },
+    { id: '17', uri: require('../assets/col.jpg'), location: 'Location 17', name: 'picture 17' },
+    { id: '18', uri: require('../assets/cute.jpg'), location: 'Location 18', name: 'picture 18' },
   ];
 
 const HomeScreen = ({ navigation }) => {
@@ -29,6 +31,7 @@ const HomeScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isImageInformation, setIsImageInformation] = useState(true);
 
   const filteredImages = images.filter(image => 
     image.id.toLowerCase().includes(searchQuery.toLowerCase())
@@ -38,36 +41,40 @@ const HomeScreen = ({ navigation }) => {
     setViewMode(viewMode === 'grid' ? 'list' : 'grid');
   };
 
-  const handleImagePress = (uri) => {
-    setSelectedImage(uri);
+  const handleImagePress = (imageItem) => {
+    setSelectedImage(imageItem);
     setIsModalVisible(true);
   };
 
-
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={viewMode === 'grid' ? styles.gridItem : styles.listItem} onPress={() => handleImagePress(item.uri)}>
-      <Image source={item.uri} style={viewMode === 'grid' ? styles.gridImage : styles.listImage} />
+    <TouchableOpacity 
+      style={viewMode === 'grid' ? styles.gridItem : styles.listItem} 
+      onPress={() => handleImagePress(item)}
+    >
+      <Image 
+        source={item.uri} 
+        style={viewMode === 'grid' ? styles.gridImage : styles.listImage} 
+      />
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-
-        {/* SEARCH FUNCTION */}
-        <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
-            <TextInput
-            style={styles.searchInput}
-            placeholder="Search by image ID"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#666"
-            />
-            {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#666" />
-            </TouchableOpacity>
-            ) : null}
+      {/* SEARCH FUNCTION */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by image ID"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor="#666"
+        />
+        {searchQuery ? (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color="#666" />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* FlatList to display images in grid or list view */}
@@ -86,7 +93,6 @@ const HomeScreen = ({ navigation }) => {
       />
 
       {/* MODAL */}
-      {/* Modal to display the selected image */}
       {selectedImage && (
         <Modal
           visible={isModalVisible}
@@ -95,28 +101,57 @@ const HomeScreen = ({ navigation }) => {
           onRequestClose={() => setIsModalVisible(false)}
         >
           <View style={styles.modalContainer}>
-
             <View style={styles.modalHeader}>
-                <TouchableOpacity style={styles.closeButton} onPress={() => setIsModalVisible(false)}>
-                <Ionicons name="close" size={30} color="#fff" />
-                </TouchableOpacity>
+              {isImageInformation && (
+                <View style={styles.imageInfoHeader}>
+                  <Text style={styles.imageInfoText}>{selectedImage.name}</Text>
+                  {/* <Text style={styles.imageInfoText}>{selectedImage.location}</Text> */}
+                  <TouchableOpacity 
+                    style={styles.closeButton} 
+                    onPress={() => setIsModalVisible(false)}
+                  >
+                    <Ionicons name="close" size={30} color="#000" />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-
-            <Image source={selectedImage} style={styles.fullImage} />
+            
+            <TouchableOpacity 
+              onPress={() => setIsImageInformation(!isImageInformation)}
+              style={styles.fullImageContainer}
+            >
+              <Image 
+                source={selectedImage.uri} 
+                style={styles.fullImage} 
+              />
+            </TouchableOpacity>
 
             <View style={styles.modalFooter}>
+              {isImageInformation && (
+                <View style={styles.imageInfoFooter}>
 
+                    <TouchableOpacity>
+                        <AntDesign name="sharealt" size={25} color="#000" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity>
+                        <Ionicons name="trash" size={25} color="#000" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity>
+                        <Ionicons name="location-sharp" size={25} color="red" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity>
+                        <MaterialCommunityIcons name="image-edit-outline" size={25} color="#000" />
+                    </TouchableOpacity>
+
+                </View>
+              )}
             </View>
           </View>
         </Modal>
       )}
-
-      {/* Button to toggle between grid and list view */}
-      {/* <TouchableOpacity style={styles.toggleButton} onPress={toggleViewMode}>
-        <Text style={styles.buttonText}>
-          Switch to {viewMode === 'grid' ? 'List' : 'Grid'} View
-        </Text>
-      </TouchableOpacity> */}
 
       {/* Floating button to open camera */}
       <TouchableOpacity
@@ -164,7 +199,7 @@ const styles = StyleSheet.create({
   gridImage: 
   {
     width: '100%',
-    height: 110,
+    height: 100,
     borderWidth: 1,
     borderColor: '#ddd',
   },
@@ -211,7 +246,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: 15,
-    marginBottom: 15,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -255,9 +290,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 1)',
     // gap: 5
   },
-  fullImage: {
+  fullImageContainer: {
     width: '100%',
     height: '83%',
+  },
+
+  fullImage: {
+    width: '100%',
+    height: '100%',
     resizeMode: 'contain',
   },
 
@@ -265,18 +305,48 @@ const styles = StyleSheet.create({
   {
     height: '7%',
     width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, .9)',
+    backgroundColor: '#000',
     justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingHorizontal: 20
+    alignItems: 'center',
+  },
+
+  imageInfoHeader:
+  {
+    height: '100%',
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    flexDirection: 'row'
   },
 
   modalFooter:
   {
     height: '10%',
     width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, .9)',
+    backgroundColor: 'rgba(0, 0, 0, 1)',
   },
+
+  imageInfoFooter:
+  {
+    height: '100%',
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 60,
+    flexDirection: 'row'
+  },
+
+  imageInfoText:
+  {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: 'bold',
+    textTransform: 'capitalize',
+  }
+
 });
 
 export default HomeScreen;

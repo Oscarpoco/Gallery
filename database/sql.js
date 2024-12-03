@@ -10,8 +10,8 @@ export const initDatabase = () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         imageUri TEXT NOT NULL,
         timestamp TEXT NOT NULL,
-        location TEXT NOT NULL,
-        metadata TEXT
+        longitude TEXT NOT NULL,
+        latitude TEXT NOT NULL,
       );`,
       [],
       () => console.log('Table created successfully'),
@@ -24,7 +24,7 @@ export const initDatabase = () => {
 export const addGalleryItem = (imageUri, timestamp, location, metadata, callback) => {
   db.transaction((tx) => {
     tx.executeSql(
-      `INSERT INTO gallery (imageUri, timestamp, location, metadata) VALUES (?, ?, ?, ?);`,
+      `INSERT INTO gallery (imageUri, timestamp, longitude, latitude) VALUES (?, ?, ?, ?);`,
       [imageUri, timestamp, location, metadata],
       (_, result) => {
         console.log('Item added:', result.insertId);
@@ -54,7 +54,7 @@ export const fetchGalleryItems = (callback) => {
 export const updateGalleryItem = (id, imageUri, timestamp, location, metadata, callback) => {
   db.transaction((tx) => {
     tx.executeSql(
-      `UPDATE gallery SET imageUri = ?, timestamp = ?, location = ?, metadata = ? WHERE id = ?;`,
+      `UPDATE gallery SET imageUri = ?, timestamp = ?, longitude = ?, latitude = ? WHERE id = ?;`,
       [imageUri, timestamp, location, metadata, id],
       (_, result) => {
         console.log('Item updated:', result.rowsAffected);
