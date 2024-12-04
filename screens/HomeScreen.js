@@ -5,6 +5,7 @@ import { View, TextInput, Text, StyleSheet, TouchableOpacity, FlatList, Image, M
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MapScreen from './Maps';
 
 
 const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible  }) => {
@@ -14,6 +15,7 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [isImageInformation, setIsImageInformation] = useState(true);
+  const [viewLocation, setViewLocation] = useState(false);
 
   const filteredImages = allimages.filter((image) => 
     (image.name || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -27,6 +29,8 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
   const handleImagePress = (imageItem) => {
     setSelectedImage(imageItem);
     setIsModalVisible(true);
+    setViewLocation(false);
+    setIsImageInformation(true);
   };
 
   const renderItem = ({ item }) => (
@@ -84,6 +88,22 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
           onRequestClose={() => setIsModalVisible(false)}
         >
           <View style={styles.modalContainer}>
+
+            {viewLocation ? 
+            <View style={styles.modalHeader}>
+                <View style={styles.imageInfoHeader}>
+                    <Text style={styles.imageInfoText}>{selectedImage.name}</Text>
+                    <TouchableOpacity 
+                    style={styles.closeButton} 
+                    onPress={() => setViewLocation(false)}
+                    >
+                    <Ionicons name="close" size={30} color="#000" />
+                    </TouchableOpacity>
+                </View> 
+            </View>
+
+            : 
+
             <View style={styles.modalHeader}>
               {isImageInformation && (
                 <View style={styles.imageInfoHeader}>
@@ -97,6 +117,16 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
                 </View>
               )}
             </View>
+
+            }
+            
+            {viewLocation ? 
+
+            <View style={styles.fullImageContainer}>
+                <MapScreen selectedImage={selectedImage} setViewLocation={setViewLocation} setIsImageInformation={setIsImageInformation} />
+            </View> 
+            
+            : 
             
             <TouchableOpacity 
               onPress={() => setIsImageInformation(!isImageInformation)}
@@ -106,43 +136,64 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
                 source={{ uri: selectedImage.filePath }} 
                 style={styles.fullImage} 
               />
-            </TouchableOpacity>
+            </TouchableOpacity>}
 
-            <View style={styles.modalFooter}>
-              {isImageInformation && (
-                <View style={styles.imageInfoFooter}>
-                  <TouchableOpacity onPress={() => handleShareImage(selectedImage.id)}>
-                    <AntDesign name="sharealt" size={25} color="#000" />
-                  </TouchableOpacity>
+            {viewLocation ? 
+            
+                <View style={styles.modalFooter}>
+                    <View style={styles.infoContainer}>
+                        <View style={styles.infoRow}>
+                        <View style={styles.locationCircle}>
+                            <Ionicons name="location-sharp" size={15} color="red" />
+                        </View>
+                        <Text style={styles.infoText}>Latitude: {selectedImage.latitude}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                        <View style={styles.locationCircle}>
+                            <Ionicons name="location-outline" size={15} color="green" />
+                        </View>
+                        <Text style={styles.infoText}>Longitude: {selectedImage.longitude}</Text>
+                        </View>
+                    </View>
+                </View> 
+                
+                :
+                
+                <View style={styles.modalFooter}>
+                    {isImageInformation && (
+                        <View style={styles.imageInfoFooter}>
+                        <TouchableOpacity onPress={() => handleShareImage(selectedImage.id)}>
+                            <AntDesign name="sharealt" size={25} color="#000" />
+                        </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => handleDeleteImage(selectedImage.id)}>
-                    <Ionicons name="trash" size={25} color="#000" />
-                  </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleDeleteImage(selectedImage.id)}>
+                            <Ionicons name="trash" size={25} color="#000"/>
+                        </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => {
-                    // NAVIGATE TO LOCATION SCREEN
-                    navigation.navigate('Location', { 
-                      latitude: selectedImage.latitude, 
-                      longitude: selectedImage.longitude 
-                    });
-                  }}>
-                    <Ionicons name="location-sharp" size={25} color="red" />
-                  </TouchableOpacity>
+                        <TouchableOpacity onPress={() => 
+                            {
+                                setViewLocation(true);
+                                // setIsImageInformation(false);
+                            }}>
+                            <Ionicons name="location-sharp" size={25} color="red" />
+                        </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => {
-                    // NAVIGATE TO EDIT SCREEN
-                    navigation.navigate('EditImage', { 
-                      imageId: selectedImage.id,
-                      currentName: selectedImage.name,
-                      currentLatitude: selectedImage.latitude,
-                      currentLongitude: selectedImage.longitude
-                    });
-                  }}>
-                    <MaterialCommunityIcons name="image-edit-outline" size={25} color="#000" />
-                  </TouchableOpacity>
-                </View>
-              )}
+                        <TouchableOpacity onPress={() => {
+                            // NAVIGATE TO EDIT SCREEN
+                            navigation.navigate('EditImage', { 
+                            imageId: selectedImage.id,
+                            currentName: selectedImage.name,
+                            currentLatitude: selectedImage.latitude,
+                            currentLongitude: selectedImage.longitude
+                            });
+                        }}>
+                            <MaterialCommunityIcons name="image-edit-outline" size={25} color="#000" />
+                        </TouchableOpacity>
+                        </View>
+                    )}
             </View>
+                
+                }
           </View>
         </Modal>
       )}
@@ -339,7 +390,43 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: 'bold',
     textTransform: 'capitalize',
-  }
+  },
+  infoContainer: {
+    padding: 10,
+    borderTopWidth: 1,
+    borderColor: '#ddd',
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    paddingVertical: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 7
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 20,
+    width: '100%',
+
+  },
+
+  locationCircle: {
+    width: 20,
+    height: 20,
+    backgroundColor: 'rgba(0, 0, 0, .2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderRadius: 50
+  },
 
 });
 

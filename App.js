@@ -111,13 +111,13 @@ const App = () => {
 
   // ADD MEDIA
   const handleAddImage = async () => {
-    if (!picture || !location) {
+    if (!picture) {
       Alert.alert('Error', 'No picture or location data available.');
       return;
     }
 
     const timestamp = new Date().toISOString();
-    const filePath = picture.uri;
+    const filePath = pic.uri || picture.uri; 
     const name = `image_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
     const { latitude, longitude } = location.coords;
 
@@ -125,7 +125,6 @@ const App = () => {
       const newImageId = await addImage(filePath, timestamp, latitude, longitude, name);
       const updatedImages = await getAllImages();
       setImages(updatedImages);
-      setPicture(null);
 
       Alert.alert('Success', `Image added successfully with ID: ${newImageId}`, [{ text: 'OK' }]);
     } catch (error) {

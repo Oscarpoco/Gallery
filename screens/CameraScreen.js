@@ -45,28 +45,26 @@ const takePicture = async () => {
         console.warn('Camera is not ready.');
         return;
       }
-
-      if (picture) {
-        setPicture(null);
-      }
   
       const options = {
         quality: 1,
         base64: true,
         exif: true,
       };
-
+  
+      // CAPTURE THE PICTURE
       const pic = await camera.current.takePictureAsync(options);
       setPicture(pic);
       console.log('Picture captured successfully:', pic.uri);
-
-    //   SAVE PICTURE
-      handleAddImage()
+  
+      // SAVE THE PICTURE
+      handleAddImage(pic);
   
     } catch (error) {
       console.error('Error capturing picture:', error);
     }
   };
+  
   
 //   ENDS
 
@@ -91,7 +89,6 @@ const takePicture = async () => {
             <TouchableOpacity
             onPress={() => 
                 {
-                    setPicture(null);
                     setViewImage(false);
                 }}
             style={styles.retakeButton}
