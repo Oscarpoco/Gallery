@@ -1,96 +1,151 @@
-import * as SQLite from 'expo-sqlite';
+import { openDatabaseAsync } from 'expo-sqlite';
 
-const db = SQLite.openDatabase('gallery.db');
+let db;
 
-// Initialize the database and table
-export const initDatabase = () => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      `CREATE TABLE IF NOT EXISTS gallery (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        imageUri TEXT NOT NULL,
+export const initializeDatabase = async () => {
+  try {
+    if (!db) {
+      db = await openDatabaseAsync('mygallery.db');
+    }
+
+    // CREATE TABLE IF NOT EXISTS WITH PRAGMA JOURNAL MODE
+    await db.execAsync(`
+      PRAGMA journal_mode = WAL;
+      CREATE TABLE IF NOT EXISTS images (
+        id INTEGER PRIMARY KEY NOT NULL,
+        filePath TEXT NOT NULL,
         timestamp TEXT NOT NULL,
-        longitude TEXT NOT NULL,
-        latitude TEXT NOT NULL,
-      );`,
-      [],
-      () => console.log('Table created successfully'),
-      (_, error) => console.error('Error creating table:', error)
-    );
-  });
+        latitude REAL,
+        longitude REAL,
+        name TEXT NOT NULL
+      );
+    `);
+
+    console.log('DATABASE INITIALIZED SUCCESSFULLY AND TABLE CREATED (IF NOT EXISTS).');
+    return true;
+  } catch (error) {
+    console.error('ERROR INITIALIZING THE DATABASE:', error);
+    throw new Error('Failed to initialize database');
+  }
 };
 
-// Add a new gallery entry
-export const addGalleryItem = (imageUri, timestamp, location, metadata, callback) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      `INSERT INTO gallery (imageUri, timestamp, longitude, latitude) VALUES (?, ?, ?, ?);`,
-      [imageUri, timestamp, location, metadata],
-      (_, result) => {
-        console.log('Item added:', result.insertId);
-        if (callback) callback(result.insertId);
-      },
-      (_, error) => console.error('Error adding item:', error)
+
+
+// ADD IMAGE TO DATABASE
+export const addImage = async (filePath, timestamp, latitude, longitude, name) => {
+  try {
+    if (!db) throw new Error('DATABASE NOT INITIALIZED');
+  
+    const result = await db.runAsync(
+      'INSERT INTO images (filePath, timestamp, latitude, longitude, name) VALUES (?, ?, ?, ?, ?)',
+      filePath,
+      timestamp,
+      latitude,
+      longitude,
+      name
     );
-  });
+  
+    console.log('IMAGE INSERTED SUCCESSFULLY. ID:', result.lastInsertRowId);
+    return result.lastInsertRowId;
+  } catch (error) {
+    console.error('ERROR ADDING IMAGE:', error);
+    throw new Error('Failed to add image to database');
+  }
 };
 
-// Fetch all gallery items
-export const fetchGalleryItems = (callback) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      `SELECT * FROM gallery;`,
-      [],
-      (_, { rows }) => {
-        console.log('Fetched items:', rows._array);
-        if (callback) callback(rows._array);
-      },
-      (_, error) => console.error('Error fetching items:', error)
-    );
-  });
+
+  
+// GET ALL IMAGES FROM DATABASE
+export const getAllImages = async () => {
+  try {
+    if (!db) throw new Error('DATABASE NOT INITIALIZED');
+  
+    const rows = await db.getAllAsync('SELECT * FROM images');
+    console.log(`RETRIEVED ${rows.length} IMAGES SUCCESSFULLY`);
+    return rows.map((row) => ({
+      id: row.id,
+      filePath: row.filePath,
+      timestamp: row.timestamp,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      name: row.name,
+    }));
+  } catch (error) {
+    console.error('ERROR RETRIEVING IMAGES:', error);
+    throw new Error('Failed to retrieve images from database');
+  }
 };
 
-// Update a gallery item by ID
-export const updateGalleryItem = (id, imageUri, timestamp, location, metadata, callback) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      `UPDATE gallery SET imageUri = ?, timestamp = ?, longitude = ?, latitude = ? WHERE id = ?;`,
-      [imageUri, timestamp, location, metadata, id],
-      (_, result) => {
-        console.log('Item updated:', result.rowsAffected);
-        if (callback) callback(result.rowsAffected > 0);
-      },
-      (_, error) => console.error('Error updating item:', error)
+
+  
+// UPDATE IMAGE IN DATABASE
+export const updateImage = async (id, latitude, longitude, name) => {
+  try {
+    if (!db) throw new Error('DATABASE NOT INITIALIZED');
+  
+    const result = await db.runAsync(
+      'UPDATE images SET latitude = ?, longitude = ?, name = ? WHERE id = ?',
+      latitude,
+      longitude,
+      name,
+      id
     );
-  });
+  
+    if (result.changes === 0) {
+      console.warn(`NO ROWS UPDATED FOR IMAGE ID: ${id}`);
+      throw new Error('No image found with the specified ID');
+    }
+    
+    console.log(`IMAGE UPDATED SUCCESSFULLY. ROWS MODIFIED: ${result.changes}`);
+    return result.changes;
+  } catch (error) {
+    console.error('ERROR UPDATING IMAGE:', error);
+    throw new Error('Failed to update image in database');
+  }
 };
 
-// Delete a gallery item by ID
-export const deleteGalleryItem = (id, callback) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      `DELETE FROM gallery WHERE id = ?;`,
-      [id],
-      (_, result) => {
-        console.log('Item deleted:', result.rowsAffected);
-        if (callback) callback(result.rowsAffected > 0);
-      },
-      (_, error) => console.error('Error deleting item:', error)
-    );
-  });
+
+
+
+// DELETE IMAGE FROM DATABASE
+export const deleteImage = async (id) => {
+  try {
+    if (!db) throw new Error('DATABASE NOT INITIALIZED');
+  
+    const result = await db.runAsync('DELETE FROM images WHERE id = ?', id);
+    
+    if (result.changes === 0) {
+      console.warn(`NO IMAGE FOUND WITH ID: ${id}`);
+      throw new Error('No image found with the specified ID');
+    }
+    
+    console.log(`IMAGE WITH ID ${id} DELETED SUCCESSFULLY`);
+    return result.changes;
+  } catch (error) {
+    console.error('ERROR DELETING IMAGE:', error);
+    throw new Error('Failed to delete image from database');
+  }
 };
 
-// Clear all gallery items
-export const clearGalleryItems = (callback) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      `DELETE FROM gallery;`,
-      [],
-      (_, result) => {
-        console.log('All items cleared:', result.rowsAffected);
-        if (callback) callback(result.rowsAffected > 0);
-      },
-      (_, error) => console.error('Error clearing items:', error)
-    );
-  });
+
+
+  
+// FETCH SINGLE IMAGE BY ID
+export const getImageById = async (id) => {
+  try {
+    if (!db) throw new Error('DATABASE NOT INITIALIZED');
+  
+    const row = await db.getFirstAsync('SELECT * FROM images WHERE id = ?', id);
+    
+    if (!row) {
+      console.warn(`NO IMAGE FOUND WITH ID: ${id}`);
+      throw new Error('No image found with the specified ID');
+    }
+    
+    console.log(`IMAGE WITH ID ${id} RETRIEVED SUCCESSFULLY`);
+    return row;
+  } catch (error) {
+    console.error('ERROR RETRIEVING IMAGE:', error);
+    throw new Error('Failed to retrieve image from database');
+  }
 };

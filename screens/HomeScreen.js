@@ -1,41 +1,24 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, FlatList, Image, Modal  } from 'react-native';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, FlatList, Image, Modal, Alert  } from 'react-native';
 
 // ICONS
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const images = [
-    { id: '1', uri: require('../assets/cod.jpg'), location: 'Location 1', name: 'picture 1' },
-    { id: '2', uri: require('../assets/b.jpg'), location: 'Location 2', name: 'picture 2' },
-    { id: '3', uri: require('../assets/g.jpg'), location: 'Location 3', name: 'picture 3' },
-    { id: '4', uri: require('../assets/1.jpg'), location: 'Location 4', name: 'picture 4' },
-    { id: '5', uri: require('../assets/Gamers.jpg'), location: 'Location 5', name: 'picture 5' },
-    { id: '6', uri: require('../assets/Groot.jpg'), location: 'Location 6', name: 'picture 6' },
-    { id: '7', uri: require('../assets/her.jpg'), location: 'Location 7', name: 'picture 7' },
-    { id: '8', uri: require('../assets/me.jpg'), location: 'Location 8', name: 'picture 8' },
-    { id: '9', uri: require('../assets/my.jpg'), location: 'Location 9', name: 'picture 9' },
-    { id: '11', uri: require('../assets/P.jpg'), location: 'Location 11', name: 'picture 11' },
-    { id: '12', uri: require('../assets/PIC.jpg'), location: 'Location 12', name: 'picture 12' },
-    { id: '13', uri: require('../assets/pi.jpg'), location: 'Location 13', name: 'picture 13' },
-    { id: '14', uri: require('../assets/sp.jpg'), location: 'Location 14', name: 'picture 14' },
-    { id: '15', uri: require('../assets/n.jpg'), location: 'Location 15', name: 'picture 15' },
-    { id: '16', uri: require('../assets/e.jpg'), location: 'Location 16', name: 'picture 16' },
-    { id: '17', uri: require('../assets/col.jpg'), location: 'Location 17', name: 'picture 17' },
-    { id: '18', uri: require('../assets/cute.jpg'), location: 'Location 18', name: 'picture 18' },
-  ];
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible  }) => {
+
+
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isImageInformation, setIsImageInformation] = useState(true);
 
-  const filteredImages = images.filter(image => 
-    image.id.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredImages = allimages.filter((image) => 
+    (image.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
 
   const toggleViewMode = () => {
     setViewMode(viewMode === 'grid' ? 'list' : 'grid');
@@ -52,7 +35,7 @@ const HomeScreen = ({ navigation }) => {
       onPress={() => handleImagePress(item)}
     >
       <Image 
-        source={item.uri} 
+        source={{ uri: item.filePath  }} 
         style={viewMode === 'grid' ? styles.gridImage : styles.listImage} 
       />
     </TouchableOpacity>
@@ -65,7 +48,7 @@ const HomeScreen = ({ navigation }) => {
         <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by image ID"
+          placeholder="Search by image name"
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholderTextColor="#666"
@@ -77,12 +60,12 @@ const HomeScreen = ({ navigation }) => {
         ) : null}
       </View>
 
-      {/* FlatList to display images in grid or list view */}
+      {/* FLATLIST TO DISPLAY IMAGES */}
       <FlatList
         key={viewMode} 
         data={filteredImages}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         numColumns={viewMode === 'grid' ? 3 : 1}
         style={styles.imageList}
         ListEmptyComponent={
@@ -105,7 +88,6 @@ const HomeScreen = ({ navigation }) => {
               {isImageInformation && (
                 <View style={styles.imageInfoHeader}>
                   <Text style={styles.imageInfoText}>{selectedImage.name}</Text>
-                  {/* <Text style={styles.imageInfoText}>{selectedImage.location}</Text> */}
                   <TouchableOpacity 
                     style={styles.closeButton} 
                     onPress={() => setIsModalVisible(false)}
@@ -121,7 +103,7 @@ const HomeScreen = ({ navigation }) => {
               style={styles.fullImageContainer}
             >
               <Image 
-                source={selectedImage.uri} 
+                source={{ uri: selectedImage.filePath }} 
                 style={styles.fullImage} 
               />
             </TouchableOpacity>
@@ -129,23 +111,35 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.modalFooter}>
               {isImageInformation && (
                 <View style={styles.imageInfoFooter}>
+                  <TouchableOpacity onPress={() => handleShareImage(selectedImage.id)}>
+                    <AntDesign name="sharealt" size={25} color="#000" />
+                  </TouchableOpacity>
 
-                    <TouchableOpacity>
-                        <AntDesign name="sharealt" size={25} color="#000" />
-                    </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteImage(selectedImage.id)}>
+                    <Ionicons name="trash" size={25} color="#000" />
+                  </TouchableOpacity>
 
-                    <TouchableOpacity>
-                        <Ionicons name="trash" size={25} color="#000" />
-                    </TouchableOpacity>
+                  <TouchableOpacity onPress={() => {
+                    // NAVIGATE TO LOCATION SCREEN
+                    navigation.navigate('Location', { 
+                      latitude: selectedImage.latitude, 
+                      longitude: selectedImage.longitude 
+                    });
+                  }}>
+                    <Ionicons name="location-sharp" size={25} color="red" />
+                  </TouchableOpacity>
 
-                    <TouchableOpacity>
-                        <Ionicons name="location-sharp" size={25} color="red" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity>
-                        <MaterialCommunityIcons name="image-edit-outline" size={25} color="#000" />
-                    </TouchableOpacity>
-
+                  <TouchableOpacity onPress={() => {
+                    // NAVIGATE TO EDIT SCREEN
+                    navigation.navigate('EditImage', { 
+                      imageId: selectedImage.id,
+                      currentName: selectedImage.name,
+                      currentLatitude: selectedImage.latitude,
+                      currentLongitude: selectedImage.longitude
+                    });
+                  }}>
+                    <MaterialCommunityIcons name="image-edit-outline" size={25} color="#000" />
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
@@ -153,7 +147,7 @@ const HomeScreen = ({ navigation }) => {
         </Modal>
       )}
 
-      {/* Floating button to open camera */}
+      {/* FLOATING BUTTON TO OPEN CAMERA */}
       <TouchableOpacity
         style={styles.floatingButton}
         onPress={() => navigation.navigate('Camera')} 

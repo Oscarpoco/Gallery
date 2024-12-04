@@ -6,13 +6,14 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Image,
+  Image
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-export default function CameraScreen({ picture, setPicture }) {
+export default function CameraScreen({ picture, setPicture, handleAddImage, location }) {
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
+  const [viewImage, setViewImage] = useState(false);
   const camera = useRef();
 
 //   PERMISSIONS
@@ -38,16 +39,35 @@ export default function CameraScreen({ picture, setPicture }) {
 //   ENDS
 
 //   CAPTURING PICTURES
-  const takePicture = async () => {
-    const options = {
-      quality: 1,
-      base64: true,
-      exif: true,
-    };
+const takePicture = async () => {
+    try {
+      if (!camera.current) {
+        console.warn('Camera is not ready.');
+        return;
+      }
 
-    const pic = await camera.current.takePictureAsync(options);
-    setPicture(pic);
+      if (picture) {
+        setPicture(null);
+      }
+  
+      const options = {
+        quality: 1,
+        base64: true,
+        exif: true,
+      };
+
+      const pic = await camera.current.takePictureAsync(options);
+      setPicture(pic);
+      console.log('Picture captured successfully:', pic.uri);
+
+    //   SAVE PICTURE
+      handleAddImage()
+  
+    } catch (error) {
+      console.error('Error capturing picture:', error);
+    }
   };
+  
 //   ENDS
 
 // FLIP CAMERA
@@ -56,32 +76,29 @@ export default function CameraScreen({ picture, setPicture }) {
   }
 //   ENDS
 
-// UPLOAD
-  const sendPic = () => {
-    console.log('Sending picture...');
-  };
-//   ENDS
+
 
 // SKIPPING ALL THE FUNCTIONS IF THERE'S A PICTURE
-  if (picture) {
+  if (picture && viewImage) {
     return (
       <View style={styles.imagePreviewContainer}>
         <Image
           source={{ uri: 'data:image/jpg;base64,' + picture.base64 }}
           style={styles.previewImage}
         />
-        <Pressable
-          onPress={() => sendPic()}
-          style={styles.sendButtonContainer}
-        >
-          <MaterialIcons name="send" size={30} color="white" />
-        </Pressable>
-        <TouchableOpacity
-          onPress={() => setPicture(null)}
-          style={styles.retakeButton}
-        >
-          <Text style={styles.retakeButtonText}>Retake</Text>
-        </TouchableOpacity>
+
+        <View style={styles.bottomContainer}>
+            <TouchableOpacity
+            onPress={() => 
+                {
+                    setPicture(null);
+                    setViewImage(false);
+                }}
+            style={styles.retakeButton}
+            >
+            <Text style={styles.retakeButtonText}>Retake</Text>
+            </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -92,11 +109,19 @@ export default function CameraScreen({ picture, setPicture }) {
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.toggleButton} onPress={toggleCameraFacing}>
             <MaterialIcons name="flip-camera-ios" size={24} color="white" />
-            <Text style={styles.buttonText}>Flip</Text>
           </TouchableOpacity>
 
           <Pressable onPress={() => takePicture()} style={styles.captureButton}>
             <View style={styles.captureInner} />
+          </Pressable>
+
+          <Pressable style={styles.smallReviewCont} onPress={()=> setViewImage(true)}>
+            {picture && (
+                <Image
+                source={{ uri: 'data:image/jpg;base64,' + picture.base64 }}
+                style={styles.smallReviewContImg}
+                />
+            )}
           </Pressable>
         </View>
       </CameraView>
@@ -138,7 +163,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 20,
@@ -146,14 +171,19 @@ const styles = StyleSheet.create({
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 20,
+    position: 'absolute',
+    top: 15,
+    right: 10,
   },
   buttonText: {
     color: '#fff',
     marginLeft: 5,
   },
+
   captureButton: {
     width: 70,
     height: 70,
@@ -176,30 +206,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#000',
   },
+  bottomContainer: {
+    width: '100%',
+    height: '10%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+
   previewImage: {
     width: '100%',
-    height: '100%',
-  },
-  sendButtonContainer: {
-    position: 'absolute',
-    bottom: 40,
-    right: 30,
-    backgroundColor: '#1E90FF',
-    padding: 15,
-    borderRadius: 50,
+    height: '90%',
   },
   retakeButton: {
-    marginTop: 20,
     padding: 10,
     backgroundColor: 'red',
     borderRadius: 8,
-    zIndex: 20,
-    position: 'absolute',
-    bottom: 50,
-    left: 30,
   },
   retakeButtonText: {
     color: '#fff',
     fontSize: 16,
   },
+
+  smallReviewCont: {
+    width: 100,
+    height: 60,
+    // borderRadius: 10,
+    position: 'absolute',
+    left: 10,
+    bottom: 25,
+    backgroundColor: 'rgba(0, 0, 0, .1)',
+  },
+
+  smallReviewContImg:
+  {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover'
+  }
 });
