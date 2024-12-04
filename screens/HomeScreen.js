@@ -8,7 +8,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import MapScreen from './Maps';
 
 
-const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible  }) => {
+const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible, handleUpdateImage, newName, setNewName  }) => {
 
 
   const [viewMode, setViewMode] = useState('grid');
@@ -16,6 +16,7 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
   const [selectedImage, setSelectedImage] = useState(null);
   const [isImageInformation, setIsImageInformation] = useState(true);
   const [viewLocation, setViewLocation] = useState(false);
+  const [isEditting, setIsEditting] = useState(false);
 
   const filteredImages = allimages.filter((image) => 
     (image.name || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -138,6 +139,47 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
               />
             </TouchableOpacity>}
 
+            {isEditting && (
+                    <Modal
+                        visible={isEditting}
+                        animationType="fade"
+                        transparent={true}
+                        onRequestClose={() => setIsEditting(false)}
+                    >
+                        <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <TextInput
+                            style={styles.editInput}
+                            placeholder={selectedImage.name || 'Enter new name'}
+                            value={newName}
+                            onChangeText={setNewName}
+                            placeholderTextColor="#666"
+                            />
+
+                            <View style={styles.buttonContainer}>
+                            <TouchableOpacity
+                                style={styles.saveButton}
+                                onPress={() => {
+                                    handleUpdateImage(selectedImage.id, newName); 
+                                setIsEditting(false);
+                                }}
+                            >
+                                 <Text style={[styles.infoText, {color: 'rgba(255, 255, 255, .7)', letterSpacing: 2, fontSize: 17, textAlign: 'center'}]}>Accept</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setIsEditting(false)}
+                            >
+                                <Text style={[styles.infoText, {color: 'rgba(255, 255, 255, .7)', letterSpacing: 2, fontSize: 17, textAlign: 'center'}]}>Discard</Text>
+                            </TouchableOpacity>
+                            </View>
+                        </View>
+                        </View>
+                    </Modal>
+                )}
+
+
             {viewLocation ? 
             
                 <View style={styles.modalFooter}>
@@ -178,15 +220,7 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
                             <Ionicons name="location-sharp" size={25} color="red" />
                         </TouchableOpacity>
 
-                        <TouchableOpacity onPress={() => {
-                            // NAVIGATE TO EDIT SCREEN
-                            navigation.navigate('EditImage', { 
-                            imageId: selectedImage.id,
-                            currentName: selectedImage.name,
-                            currentLatitude: selectedImage.latitude,
-                            currentLongitude: selectedImage.longitude
-                            });
-                        }}>
+                        <TouchableOpacity onPress={() => {setIsEditting(true)}}>
                             <MaterialCommunityIcons name="image-edit-outline" size={25} color="#000" />
                         </TouchableOpacity>
                         </View>
@@ -426,6 +460,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     borderRadius: 50
+  },
+
+//   EDITTING
+modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', 
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '95%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  editInput: {
+    width: '100%',
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    gap: 10
+  },
+  saveButton: {
+    backgroundColor: '#28a745',
+    padding: 9,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: '100%',
+  },
+  cancelButton: {
+    backgroundColor: '#dc3545',
+    padding: 9,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: '100%',
   },
 
 });

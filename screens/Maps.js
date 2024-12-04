@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Image, StyleSheet, Dimensions } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import FastImage from 'react-native-fast-image';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,7 +26,6 @@ const MapScreen = ({ selectedImage }) => {
       >
         <Marker
           coordinate={{ latitude, longitude }}
-          tracksViewChanges={false}
         >
           <View style={styles.markerContainer}>
             <Image 
@@ -51,9 +49,9 @@ const styles = StyleSheet.create({
     height: height,
   },
   markerContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 5,
     borderWidth: 3,
     borderColor: 'white',
     shadowColor: '#000',
@@ -66,6 +64,7 @@ const styles = StyleSheet.create({
   markerImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 5,
   }
 });
 

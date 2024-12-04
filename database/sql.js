@@ -79,14 +79,12 @@ export const getAllImages = async () => {
 
   
 // UPDATE IMAGE IN DATABASE
-export const updateImage = async (id, latitude, longitude, name) => {
+export const updateImage = async (id, name) => {
   try {
     if (!db) throw new Error('DATABASE NOT INITIALIZED');
   
     const result = await db.runAsync(
-      'UPDATE images SET latitude = ?, longitude = ?, name = ? WHERE id = ?',
-      latitude,
-      longitude,
+      'UPDATE images SET name = ? WHERE id = ?',
       name,
       id
     );

@@ -6,7 +6,7 @@ import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 // SQLITE FUNCTIONS
 import {
@@ -25,7 +25,7 @@ import Settings from './screens/Settings';
 
 // Stack Navigators
 const HomeStack = createStackNavigator();
-const HomeStackNavigator = ({ handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible }) => (
+const HomeStackNavigator = ({ handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible, handleUpdateImage, newName, setNewName }) => (
   <HomeStack.Navigator>
     <HomeStack.Screen
       name="HomeMain"
@@ -37,6 +37,9 @@ const HomeStackNavigator = ({ handleDeleteImage, allimages, handleShareImage, is
           handleShareImage={handleShareImage}
           isModalVisible={isModalVisible}
           setIsModalVisible={setIsModalVisible}
+          handleUpdateImage={handleUpdateImage}
+          newName={newName}
+          setNewName={setNewName}
         />
       )}
     />
@@ -59,6 +62,8 @@ const App = () => {
   const [picture, setPicture] = useState('');
   const [allimages, setImages] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [newName, setNewName] = useState('');
+
 
 
   // GET LOCATION
@@ -81,13 +86,7 @@ const App = () => {
 
     getCurrentLocation();
   }, []);
-
-  useEffect(() => {
-    if (location && picture) {
-      console.log('Latitude:', location.coords.latitude);
-      console.log('Longitude:', location.coords.longitude);
-    }
-  }, [location, picture]);
+// END
 
   // INITIALIZE DATABASE
   useEffect(() => {
@@ -165,24 +164,106 @@ const handleShareImage = async (imageId) => {
       throw new Error('Image not found');
     }
 
-    // CHECK IF FILE EXISTS
-    const fileExists = await FileSystem.getInfoAsync(image.filePath);
-    
-    if (!fileExists.exists) {
-      throw new Error('Image file no longer exists');
+    // Ensure file path is valid
+    if (!image.filePath) {
+      throw new Error('Invalid file path');
     }
 
-    // SHARE OPTIONS
-    const shareOptions = {
-      mimeType: 'image/jpeg',
-      dialogTitle: 'Share Image',
-      UTI: 'image/jpeg',
-    };
+    // ENHANCED FILE CHECK WITH MORE ROBUST VERIFICATION
+    let fileInfo;
+    try {
+      fileInfo = await FileSystem.getInfoAsync(image.filePath, { 
+        size: true, 
+        md5: false, 
+        modificationTime: false 
+      });
+    } catch (fileCheckError) {
+      throw new Error('Unable to access image file');
+    }
 
-    // PERFORM SHARE
-    await Share.shareAsync(image.filePath, shareOptions);
+    // Comprehensive file existence and size check
+    if (!fileInfo.exists || fileInfo.size <= 0) {
+      throw new Error('Image file is unavailable or empty');
+    }
+
+    // PLATFORM-SPECIFIC SHARING APPROACH
+    const shareOptions = Platform.select({
+      ios: {
+        activityItemSources: [
+          {
+            placeholderItem: { type: 'url', content: image.filePath },
+            item: {
+              default: { type: 'url', content: image.filePath },
+            },
+            subject: {
+              default: 'Check out this image',
+            },
+            linkMetadata: {
+              originalUrl: image.filePath,
+              url: image.filePath,
+              title: image.name || 'Shared Image'
+            }
+          }
+        ],
+      },
+      default: {
+        mimeType: 'image/jpeg',
+        dialogTitle: image.name || 'Share Image',
+      }
+    });
+
+    // PERFORM SHARE WITH MULTIPLE FALLBACKS
+    try {
+      const result = await Share.shareAsync(image.filePath, shareOptions);
+      
+      // Optional: Log sharing result
+      if (result.action === Share.sharedAction) {
+        console.log('Image shared successfully');
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dialog was dismissed');
+      }
+    } catch (shareError) {
+      // Additional fallback for sharing
+      try {
+        await Sharing.shareAsync(image.filePath, {
+          mimeType: 'image/jpeg',
+          dialogTitle: 'Share Image',
+        });
+      } catch (fallbackError) {
+        throw new Error('Failed to share image through all methods');
+      }
+    }
+
   } catch (error) {
-    // HANDLE SHARING ERRORS
+    // COMPREHENSIVE ERROR HANDLING
+    console.error('Share Image Error:', error);
+    
+    Alert.alert(
+      'Share Failed', 
+      error.message || 'Unable to share image. Please try again.',
+      [{ text: 'OK' }]
+    );
+  }
+};
+
+// UPDATE
+const handleUpdateImage = async (imageId, newName) => {
+  try {
+    // Call the updateImage function to update the image's name in the database
+    const changes = await updateImage(imageId, newName);
+
+    // If any rows are updated, refresh the images list
+    if (changes > 0) {
+      const updatedImages = await getAllImages();
+      setImages(updatedImages);
+      console.log(`Image successfully updated. Rows affected: ${changes}`);
+      Alert.alert('Success', `Image successfully updated.`, [{ text: 'OK' }]);
+      setIsModalVisible(false)
+
+    } else {
+      console.log(`No image found to update with ID: ${imageId}`);
+    }
+  } catch (error) {
     Alert.alert(
       'Share Error', 
       error.message || 'Failed to share image',
@@ -190,7 +271,6 @@ const handleShareImage = async (imageId) => {
     );
   }
 };
-// ENDS
 
   return (
     <NavigationContainer>
@@ -219,6 +299,9 @@ const handleShareImage = async (imageId) => {
               handleShareImage={handleShareImage}
               isModalVisible={isModalVisible}
               setIsModalVisible={setIsModalVisible}
+              handleUpdateImage={handleUpdateImage}
+              newName={newName}
+              setNewName={setNewName}
             />
           )}
           options={{

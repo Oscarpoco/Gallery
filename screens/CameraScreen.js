@@ -93,7 +93,7 @@ const takePicture = async () => {
                 }}
             style={styles.retakeButton}
             >
-            <Text style={styles.retakeButtonText}>Retake</Text>
+            <Text style={styles.retakeButtonText}>Close</Text>
             </TouchableOpacity>
         </View>
       </View>
@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+  
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -228,7 +229,6 @@ const styles = StyleSheet.create({
   smallReviewCont: {
     width: 100,
     height: 60,
-    // borderRadius: 10,
     position: 'absolute',
     left: 10,
     bottom: 25,
