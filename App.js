@@ -249,10 +249,9 @@ const handleShareImage = async (imageId) => {
 // UPDATE
 const handleUpdateImage = async (imageId, newName) => {
   try {
-    // Call the updateImage function to update the image's name in the database
+
     const changes = await updateImage(imageId, newName);
 
-    // If any rows are updated, refresh the images list
     if (changes > 0) {
       const updatedImages = await getAllImages();
       setImages(updatedImages);
