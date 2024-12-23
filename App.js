@@ -6,7 +6,8 @@ import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Alert, Platform } from 'react-native';
+import { Alert, Platform, View, StyleSheet, StatusBar } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 // SQLITE FUNCTIONS
 import {
@@ -23,7 +24,7 @@ import HomeScreen from './screens/HomeScreen';
 import CameraScreen from './screens/CameraScreen';
 import Settings from './screens/Settings';
 
-// Stack Navigators
+// STACK NAVIGATOR
 const HomeStack = createStackNavigator();
 const HomeStackNavigator = ({ handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible, handleUpdateImage, newName, setNewName }) => (
   <HomeStack.Navigator>
@@ -76,7 +77,9 @@ const App = () => {
           return;
         }
 
-        let locationResult = await Location.getCurrentPositionAsync({});
+        let locationResult = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
         setLocation(locationResult);
       } catch (error) {
         setErrorMsg('Error while fetching location');
@@ -94,14 +97,17 @@ const App = () => {
       try {
         const initialized = await initializeDatabase();
         if (initialized) {
-          console.log('DATABASE INITIALIZED SUCCESSFULLY!');
           const storedImages = await getAllImages();
           setImages(storedImages);
         }
       } catch (error) {
-        Alert.alert('Database Error', error.message || 'Failed to initialize database', [
-          { text: 'OK' },
-        ]);
+        Toast.show({
+          text1: 'Database Error',
+          text2: error.message || 'Failed to initialize database',
+          type: 'error',
+          position: 'bottom'
+        })
+
       }
     };
 
@@ -109,27 +115,45 @@ const App = () => {
   }, []);
 
   // ADD MEDIA
-  const handleAddImage = async () => {
-    if (!picture) {
-      Alert.alert('Error', 'No picture or location data available.');
+  const handleAddImage = async (pic) => {
+    if (!location || !location.coords || (!pic?.uri && !picture?.uri)) {
+      Toast.show({
+        text1: 'Missing Fields Error',
+        text2: 'Missing required data (location or image).',
+        type: 'error',
+        position: 'bottom'
+      })
       return;
     }
-
+  
     const timestamp = new Date().toISOString();
-    const filePath = pic.uri || picture.uri; 
+    const filePath = pic?.uri || picture?.uri;
     const name = `image_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
     const { latitude, longitude } = location.coords;
-
+  
     try {
       const newImageId = await addImage(filePath, timestamp, latitude, longitude, name);
       const updatedImages = await getAllImages();
       setImages(updatedImages);
-
-      Alert.alert('Success', `Image added successfully with ID: ${newImageId}`, [{ text: 'OK' }]);
+  
+      Toast.show({
+        text1: 'Success',
+        text2: `Image added successfully with ID: ${newImageId}`,
+        type: 'success',
+        position: 'bottom'
+      })
     } catch (error) {
-      Alert.alert('Add Image Error', error.message || 'Failed to add image', [{ text: 'OK' }]);
+      console.error('Add Image Error:', error);
+      Alert.alert('Error', error.message || 'Failed to add image.', [{ text: 'OK' }]);
+      Toast.show({
+        text1: 'Add Image Error',
+        text2: `Failed to add image : ${error.message}`,
+        type: 'error',
+        position: 'bottom'
+      })
     }
   };
+  // ENDS
 
   // DELETE IMAGE
   const handleDeleteImage = async (imageId) => {
@@ -143,13 +167,23 @@ const App = () => {
             await deleteImage(imageId);
             const updatedImages = await getAllImages();
             setImages(updatedImages);
-            Alert.alert('Success', 'Image deleted successfully', [{ text: 'OK' }]);
+            Toast.show({
+              text1: 'Success',
+              text2: `Image deleted successfully`,
+              type: 'success',
+              position: 'bottom'
+            })
             setIsModalVisible(false);
           },
         },
       ]);
     } catch (error) {
-      Alert.alert('Deletion Error', error.message || 'Failed to delete image', [{ text: 'OK' }]);
+      Toast.show({
+        text1: 'Deletion Error',
+        text2: `Failed to delete image : ${error.message}`,
+        type: 'error',
+        position: 'bottom'
+      })
     }
   };
   // END
@@ -243,6 +277,12 @@ const handleShareImage = async (imageId) => {
       error.message || 'Unable to share image. Please try again.',
       [{ text: 'OK' }]
     );
+    Toast.show({
+      text1: 'Share Failed',
+      text2: error.message || 'Unable to share image. Please try again.',
+      type: 'error',
+      position: 'bottom'
+    })
   }
 };
 
@@ -255,24 +295,30 @@ const handleUpdateImage = async (imageId, newName) => {
     if (changes > 0) {
       const updatedImages = await getAllImages();
       setImages(updatedImages);
-      console.log(`Image successfully updated. Rows affected: ${changes}`);
-      Alert.alert('Success', `Image successfully updated.`, [{ text: 'OK' }]);
+      Toast.show({
+        text1: 'Success',
+        text2: `Image successfully updated.`,
+        type: 'success',
+        position: 'bottom'
+      })
       setIsModalVisible(false)
 
     } else {
       console.log(`No image found to update with ID: ${imageId}`);
     }
   } catch (error) {
-    Alert.alert(
-      'Share Error', 
-      error.message || 'Failed to share image',
-      [{ text: 'OK' }]
-    );
+    Toast.show({
+      text1: 'Update Failed',
+      text2: error.message || 'Unable to update image. Please try again.',
+      type: 'error',
+      position: 'bottom'
+    })
   }
 };
 
   return (
     <NavigationContainer>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
@@ -333,8 +379,23 @@ const handleUpdateImage = async (imageId, newName) => {
           }}
         />
       </Tab.Navigator>
+      <View style={styles.toast}>
+        <Toast/>
+      </View>
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  toast: 
+  {
+    width: '100%',
+    position: 'absolute',
+    bottom: 50,
+    zIndex: 10,
+    justifyContent: 'center',
+    alignContent: "center",
+  }
+})
 
 export default App;

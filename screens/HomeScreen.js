@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, FlatList, Image, Modal, Alert  } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, TextInput, Text, StyleSheet, Pressable, FlatList, Image, Modal } from 'react-native';
 
 // ICONS
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import MapScreen from './Maps';
+import { PinchGestureHandler, State, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
-const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible, handleUpdateImage, newName, setNewName  }) => {
+const HomeScreen = ({ handleDeleteImage, allimages, handleShareImage, isModalVisible, setIsModalVisible, handleUpdateImage, newName, setNewName  }) => {
 
 
   const [viewMode, setViewMode] = useState('grid');
@@ -17,10 +19,49 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
   const [isImageInformation, setIsImageInformation] = useState(true);
   const [viewLocation, setViewLocation] = useState(false);
   const [isEditting, setIsEditting] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [locationFilter, setLocationFilter] = useState('');
+  const navigation = useNavigation();
+  const pinchRef = useRef();
 
-  const filteredImages = allimages.filter((image) => 
-    (image.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // FILTER LOCATIONS
+  const applyFilters = (images) => {
+    return images.filter((image) => {
+      const matchesSearch = (image.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (image.location || '').toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesLocation = !locationFilter || 
+                            (image.location || '').toLowerCase().includes(locationFilter.toLowerCase());
+      
+      const matchesDate = (!dateRange.start || new Date(image.date) >= dateRange.start) &&
+                         (!dateRange.end || new Date(image.date) <= dateRange.end);
+      
+      return matchesSearch && matchesLocation && matchesDate;
+    });
+  };
+
+  const filteredImages = applyFilters(allimages);
+
+  // PINCH TO ZOOM
+  const onPinchGestureEvent = ({ nativeEvent }) => {
+    setScale(nativeEvent.scale);
+  };
+
+  const onPinchHandlerStateChange = ({ nativeEvent }) => {
+    if (nativeEvent.state === State.END) {
+      if (nativeEvent.scale < 1) {
+        setScale(1);
+      }
+    }
+  };
+
+  // CLOSE DETAILS AFTER 7 SECONDS
+  if(selectedImage && isImageInformation){
+    setTimeout(() => {
+      setIsImageInformation(false);
+    }, 7000);
+  };
   
 
   const toggleViewMode = () => {
@@ -34,23 +75,34 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
     setIsImageInformation(true);
   };
 
+
   const renderItem = ({ item }) => (
-    <TouchableOpacity 
+    <Pressable 
       style={viewMode === 'grid' ? styles.gridItem : styles.listItem} 
       onPress={() => handleImagePress(item)}
     >
-      <Image 
-        source={{ uri: item.filePath  }} 
-        style={viewMode === 'grid' ? styles.gridImage : styles.listImage} 
-      />
-    </TouchableOpacity>
+      <PinchGestureHandler
+        ref={pinchRef}
+        onGestureEvent={onPinchGestureEvent}
+        onHandlerStateChange={onPinchHandlerStateChange}
+      >
+        <Image 
+          source={{ uri: item.filePath }} 
+          style={[
+            viewMode === 'grid' ? styles.gridImage : styles.listImage,
+            { transform: [{ scale: scale }] }
+          ]} 
+        />
+      </PinchGestureHandler>
+    </Pressable>
   );
 
   return (
-    <View style={styles.container}>
+
+    <View  style={styles.container}>
       {/* SEARCH FUNCTION */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <Ionicons name="search" size={25} color="#666" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by image name"
@@ -59,10 +111,14 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
           placeholderTextColor="#666"
         />
         {searchQuery ? (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <Pressable onPress={() => setSearchQuery('')}>
             <Ionicons name="close-circle" size={20} color="#666" />
-          </TouchableOpacity>
-        ) : null}
+          </Pressable>
+        ) : 
+          <Pressable onPress={() => toggleViewMode()}>
+            <Ionicons name={ viewMode === 'grid' ? 'list' : 'grid'} size={25} color="#666" />
+          </Pressable>
+        }
       </View>
 
       {/* FLATLIST TO DISPLAY IMAGES */}
@@ -94,12 +150,12 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
             <View style={styles.modalHeader}>
                 <View style={styles.imageInfoHeader}>
                     <Text style={styles.imageInfoText}>{selectedImage.name}</Text>
-                    <TouchableOpacity 
+                    <Pressable 
                     style={styles.closeButton} 
                     onPress={() => setViewLocation(false)}
                     >
                     <Ionicons name="close" size={30} color="#000" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View> 
             </View>
 
@@ -109,12 +165,12 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
               {isImageInformation && (
                 <View style={styles.imageInfoHeader}>
                   <Text style={styles.imageInfoText}>{selectedImage.name}</Text>
-                  <TouchableOpacity 
+                  <Pressable 
                     style={styles.closeButton} 
                     onPress={() => setIsModalVisible(false)}
                   >
                     <Ionicons name="close" size={30} color="#000" />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               )}
             </View>
@@ -129,7 +185,7 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
             
             : 
             
-            <TouchableOpacity 
+            <Pressable 
               onPress={() => setIsImageInformation(!isImageInformation)}
               style={styles.fullImageContainer}
             >
@@ -137,7 +193,7 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
                 source={{ uri: selectedImage.filePath }} 
                 style={styles.fullImage} 
               />
-            </TouchableOpacity>}
+            </Pressable>}
 
             {isEditting && (
                     <Modal
@@ -157,22 +213,22 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
                             />
 
                             <View style={styles.buttonContainer}>
-                            <TouchableOpacity
+                            <Pressable
                                 style={styles.saveButton}
                                 onPress={() => {
                                     handleUpdateImage(selectedImage.id, newName); 
                                 setIsEditting(false);
                                 }}
                             >
-                                 <Text style={[styles.infoText, {color: 'rgba(255, 255, 255, .7)', letterSpacing: 2, fontSize: 17, textAlign: 'center'}]}>Accept</Text>
-                            </TouchableOpacity>
+                                 <Text style={[styles.infoText, {color: 'rgba(255, 255, 255, 1)', letterSpacing: 2, fontSize: 16, textAlign: 'center', fontWeight: 600}]}>Accept</Text>
+                            </Pressable>
 
-                            <TouchableOpacity
+                            <Pressable
                                 style={styles.cancelButton}
                                 onPress={() => setIsEditting(false)}
                             >
-                                <Text style={[styles.infoText, {color: 'rgba(255, 255, 255, .7)', letterSpacing: 2, fontSize: 17, textAlign: 'center'}]}>Discard</Text>
-                            </TouchableOpacity>
+                                <Text style={[styles.cancelButtonText, {letterSpacing: 2}]}>Discard</Text>
+                            </Pressable>
                             </View>
                         </View>
                         </View>
@@ -204,25 +260,25 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
                 <View style={styles.modalFooter}>
                     {isImageInformation && (
                         <View style={styles.imageInfoFooter}>
-                        <TouchableOpacity onPress={() => handleShareImage(selectedImage.id)}>
+                        <Pressable onPress={() => handleShareImage(selectedImage.id)}>
                             <AntDesign name="sharealt" size={25} color="#000" />
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <TouchableOpacity onPress={() => handleDeleteImage(selectedImage.id)}>
+                        <Pressable onPress={() => handleDeleteImage(selectedImage.id)}>
                             <Ionicons name="trash" size={25} color="#000"/>
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <TouchableOpacity onPress={() => 
+                        <Pressable onPress={() => 
                             {
                                 setViewLocation(true);
                                 // setIsImageInformation(false);
                             }}>
                             <Ionicons name="location-sharp" size={25} color="red" />
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <TouchableOpacity onPress={() => {setIsEditting(true)}}>
+                        <Pressable onPress={() => {setIsEditting(true)}}>
                             <MaterialCommunityIcons name="image-edit-outline" size={25} color="#000" />
-                        </TouchableOpacity>
+                        </Pressable>
                         </View>
                     )}
             </View>
@@ -233,12 +289,12 @@ const HomeScreen = ({ navigation, handleDeleteImage, allimages, handleShareImage
       )}
 
       {/* FLOATING BUTTON TO OPEN CAMERA */}
-      <TouchableOpacity
+      <Pressable
         style={styles.floatingButton}
         onPress={() => navigation.navigate('Camera')} 
       >
         <Ionicons name="camera" color='#fff' size={24} />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 };
@@ -247,6 +303,7 @@ const styles = StyleSheet.create({
   container: 
   {
     flex: 1,
+    flexDirection: 'column',
     justifyContent: 'flex-start', 
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
@@ -268,11 +325,11 @@ const styles = StyleSheet.create({
 
   listItem: 
   {
-    flexDirection: 'row',
+    flexDirection: 'column',
     marginVertical: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
+
   },
 
   gridImage: 
@@ -285,9 +342,9 @@ const styles = StyleSheet.create({
 
   listImage: 
   {
-    width: 300,
+    width: '100%',
     height: 250,
-    marginRight: 10,
+    borderRadius: 10
   },
 
   toggleButton: 
@@ -325,6 +382,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: 15,
+    paddingVertical: 5,
     marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -333,6 +391,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     width: '97%',
     marginTop: 10,
+    borderRadius: 10
   },
 
   searchIcon: 
@@ -346,6 +405,7 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
     color: '#333',
+    letterSpacing: 1
   },
 
   emptyContainer: 
@@ -360,21 +420,25 @@ const styles = StyleSheet.create({
   {
     fontSize: 18,
     color: '#666',
+    letterSpacing: 1
   },
 
-  modalContainer: {
+  modalContainer: 
+  {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 1)',
-    // gap: 5
   },
-  fullImageContainer: {
+
+  fullImageContainer: 
+  {
     width: '100%',
     height: '83%',
   },
 
-  fullImage: {
+  fullImage: 
+  {
     width: '100%',
     height: '100%',
     resizeMode: 'contain',
@@ -425,7 +489,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textTransform: 'capitalize',
   },
-  infoContainer: {
+
+  infoContainer: 
+  {
     padding: 10,
     borderTopWidth: 1,
     borderColor: '#ddd',
@@ -438,13 +504,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7
   },
-  infoText: {
+  infoText: 
+  {
     fontSize: 16,
     color: '#333',
     fontWeight: 'bold',
     marginLeft: 10,
   },
-  infoRow: {
+  infoRow: 
+  {
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 20,
@@ -463,57 +531,92 @@ const styles = StyleSheet.create({
   },
 
 //   EDITTING
-modalOverlay: {
+modalOverlay: 
+  {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)', 
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
-    width: '95%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+  modalContent: 
+  {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
-
-  editInput: {
+  
+  editInput: 
+  {
     width: '100%',
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    height: 48,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
     fontSize: 16,
-    color: '#333',
-    marginBottom: 20,
+    color: '#1E293B',
+    marginBottom: 24,
+    backgroundColor: '#F8FAFC',
+    fontWeight: '400',
   },
-  buttonContainer: {
+  
+  buttonContainer: 
+  {
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-    gap: 10
+    gap: 12,
   },
-  saveButton: {
-    backgroundColor: '#28a745',
-    padding: 9,
-    borderRadius: 5,
+  
+  saveButton: 
+  {
+    backgroundColor: '#3B82F6',
+    padding: 14,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     width: '100%',
+    shadowColor: '#3B82F6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  cancelButton: {
-    backgroundColor: '#dc3545',
-    padding: 9,
-    borderRadius: 5,
+  
+  cancelButton: 
+  {
+    backgroundColor: '#FFF',
+    padding: 14,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     width: '100%',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  
+  cancelButtonText: 
+  {
+    color: '#64748B',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 
 });
