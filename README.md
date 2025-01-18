@@ -56,8 +56,8 @@ A modern mobile gallery application built with React Native and Expo that captur
 
 1. **Clone Repository**
    ```bash
-   git clone https://github.com/oscarpoco/gallery-app.git
-   cd gallery-app
+   git clone https://github.com/oscarpoco/gallery.git
+   cd gallery
    ```
 
 2. **Install Dependencies**
